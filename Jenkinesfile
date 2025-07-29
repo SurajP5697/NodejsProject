@@ -5,13 +5,11 @@ pipeline {
         DOCKER_IMAGE = "surajp1234/surajp1234nodejsapp"
         DOCKERHUB_CREDENTIALS_ID = "dockerhub-creds"
     }
-    tools {
-        git 'linux-git'
-    }
 
     stages {
         stage('Checkout') {
             steps {
+                // Cloning from master branch
                 git branch: 'master', url: 'https://github.com/SurajP5697/NodejsProject.git'
             }
         }
@@ -19,29 +17,54 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 script {
-                    sh 'docker build -t $DOCKER_IMAGE .'
+                    sh """
+                        echo "📦 Building Docker Image..."
+                        docker build -t $DOCKER_IMAGE .
+                    """
                 }
             }
         }
 
         stage('Docker Login') {
             steps {
-                withCredentials([usernamePassword(credentialsId: env.DOCKERHUB_CREDENTIALS_ID, usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
+                withCredentials([usernamePassword(credentialsId: "${DOCKERHUB_CREDENTIALS_ID}", usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
+                    sh """
+                        echo "🔐 Logging in to Docker Hub..."
+                        echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin
+                    """
                 }
             }
         }
 
         stage('Push Docker Image') {
             steps {
-                sh 'docker push $DOCKER_IMAGE'
+                sh """
+                    echo "🚀 Pushing Docker Image to Hub..."
+                    docker push $DOCKER_IMAGE
+                """
             }
         }
 
         stage('Run Container') {
             steps {
-                sh 'docker run -d -p 3000:3000 $DOCKER_IMAGE'
+                sh """
+                    echo "🟢 Stopping old container if running..."
+                    docker stop nodejs-container || true
+                    docker rm nodejs-container || true
+
+                    echo "🚀 Running new container..."
+                    docker run -d --name nodejs-container -p 3000:3000 $DOCKER_IMAGE
+                """
             }
+        }
+    }
+
+    post {
+        failure {
+            echo '❌ Pipeline failed.'
+        }
+        success {
+            echo '✅ Pipeline completed successfully!'
         }
     }
 }
