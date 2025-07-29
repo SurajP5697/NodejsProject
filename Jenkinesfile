@@ -5,6 +5,9 @@ pipeline {
         DOCKER_IMAGE = "surajp1234/surajp1234nodejsapp"
         DOCKERHUB_CREDENTIALS_ID = "dockerhub-creds"
     }
+    tools {
+        git 'linux-git'
+    }
 
     stages {
         stage('Checkout') {
