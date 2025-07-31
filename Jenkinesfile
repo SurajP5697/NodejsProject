@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'ubuntu-agent' }
+    agent any
 
     environment {
         DOCKER_IMAGE = "surajp1234/surajp1234nodejsapp"
@@ -9,7 +9,6 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                // This will clone the repo on the Linux agent, not on Jenkins Windows master
                 checkout([$class: 'GitSCM', 
                           branches: [[name: '*/master']], 
                           userRemoteConfigs: [[url: 'https://github.com/SurajP5697/NodejsProject.git']]
@@ -39,6 +38,11 @@ pipeline {
 
         stage('Run Container') {
             steps {
+                // Optional: Stop and remove old container if exists
+                sh "docker stop \$(docker ps -q --filter ancestor=$DOCKER_IMAGE) || true"
+                sh "docker rm \$(docker ps -a -q --filter ancestor=$DOCKER_IMAGE) || true"
+
+                // Run new container
                 sh 'docker run -d -p 3000:3000 $DOCKER_IMAGE'
             }
         }
